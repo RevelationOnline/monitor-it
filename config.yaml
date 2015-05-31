@@ -1,0 +1,69 @@
+metrics:
+  cpu:
+    graphite:
+      host: http://graphite.rammhold.de/render/
+      query: scale(offset(sumSeries(asPercent(scaleToSeconds(nonNegativeDerivative(timeShift(revelation.server.usloft4233_serverprofi24_de.cpu-*.cpu-idle, "1min")),1),1200)),-100),-1)
+
+  memory:
+     graphite:
+       host: http://graphite.rammhold.de/render/
+       query: scale(revelation.server.usloft4233_serverprofi24_de.memory.memory-used, 0.0000000009313225746154785)
+  users:
+     graphite:
+       host: http://graphite.rammhold.de/render/
+       query: revelation.connected
+#
+# urgency is defined like this:
+#-2 = Very Low
+#-1 = Moderate
+#0 = Normal
+#1 = High
+#2 = Emergency
+
+rules:
+  cpu_minimum_emergency:
+    if: cpu < 1
+    message: 'CPU is too low ({{cpu}} below 1%)'
+    urgency: 2
+
+  cpu_maximum:
+    if: cpu > 80
+    message: 'CPU usage is too high ({{cpu}} above 80%)'
+    urgency: 1
+
+  cpu_maximum_emergency:
+    if: cpu > 90
+    message: 'CPU is BURNING at {{ cpu }}'
+    urgency: 2
+
+  memory_used_low_emergency:
+    if: memory < 3
+    message: 'Memory consumption is very low: {{ memory }}'
+    urgency: 2
+
+  memory_used_high_emergency:
+    if: memory > 25
+    message: 'Memory consumption is very high: {{ memory }}'
+    urgency: 2
+
+  users_low_emergency:
+    if: users < 15
+    message: 'Low users count detected: {{ users }}'
+    urgency: 2
+
+  users_high_emergency:
+    if: users  > 150
+    message: 'High influc of players: {{ users }}'
+    urgency: 0
+
+
+
+notifications:
+  NMA:
+   notify_my_android:
+     tokens: [ 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxx' ]
+     application: 'Revelation Online Status'
+     event: 'Issue'
+     description: '{% for (urgency, message) in messages %}{{message}}
+     {%endfor%}'
+     url: 'http://graphite.rammhold.de/tessera/dashboards/6/revelation?from=-1h'
